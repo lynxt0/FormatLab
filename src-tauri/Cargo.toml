@@ -1,0 +1,65 @@
+[package]
+name = "formatlab"
+version = "0.1.0"
+description = "A clean, fully-offline file converter."
+authors = ["Caleb"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "formatlab_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+
+# Error handling
+anyhow = "1"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Images — raster
+image = { version = "0.25", default-features = false, features = [
+    "jpeg",
+    "png",
+    "webp",
+    "gif",
+    "bmp",
+    "tiff",
+    "ico",
+] }
+
+# Images — SVG rendering to raster
+resvg = "0.44"
+usvg = "0.44"
+tiny-skia = "0.11"
+
+# Text / markup
+pulldown-cmark = "0.12"
+
+# Office
+calamine = "0.26"
+
+[features]
+default = []
+# HEIC decoding is gated behind a feature flag because it requires the
+# system libheif library. Enable with --features heic on Linux. Windows
+# build support for HEIC is planned once a vendored build is sorted.
+heic = []
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
