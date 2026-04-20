@@ -10,17 +10,17 @@ Built with Tauri 2 (Rust + web), runs natively on Linux and Windows.
 
 ## Supported conversions (v0.1)
 
-| From            | To                                               |
-| --------------- | ------------------------------------------------ |
-| PNG / JPG / WebP / GIF / BMP / TIFF / ICO | any of the other raster formats |
-| SVG             | PNG / JPG / WebP / BMP / TIFF                    |
-| Markdown (`.md`) | HTML, TXT                                        |
-| HTML            | Markdown, TXT                                    |
-| TXT             | Markdown, HTML                                   |
-| XLSX            | CSV                                              |
+| From            | To                                                     |
+| --------------- | ------------------------------------------------------ |
+| PNG / JPG / WebP / GIF / BMP / TIFF / ICO | any other raster format, plus PDF    |
+| SVG             | PNG / JPG / WebP / BMP / TIFF / PDF                    |
+| Markdown (`.md`) | HTML, TXT                                              |
+| HTML            | Markdown, TXT                                          |
+| TXT             | Markdown, HTML                                         |
+| XLSX            | CSV                                                    |
 
-Planned for future releases (v0.1.1 +):
-- Images ↔ PDF (single and multi-page)
+Planned for future releases:
+- Multi-image → multi-page PDF
 - PDF → images and PDF → text
 - PDF merge / split
 - HEIC / AVIF decoding
@@ -29,13 +29,22 @@ Planned for future releases (v0.1.1 +):
 
 ## Using the pre-built app (for friends)
 
-Grab the latest release from the [Releases page](#) (coming once v0.1 is tagged):
+Grab the latest release from the
+[Releases page](https://github.com/lynxt0/FormatLab/releases/latest):
 
-- **Windows:** download `FormatLab_x64-setup.exe`, run it, done.
-- **Linux:** download `FormatLab_*.AppImage`, `chmod +x`, double-click.
-- **Linux (Debian/Ubuntu/Mint):** download the `.deb`, double-click or run `sudo dpkg -i`.
+- **Windows:** download `FormatLab_*_x64-setup.exe`, run it, done.
+- **Linux:** download `FormatLab_*_amd64.AppImage`, `chmod +x`, double-click.
+- **Linux (Debian / Ubuntu / Mint):** download the `.deb`, double-click or
+  run `sudo dpkg -i FormatLab_*_amd64.deb`.
 
-Your files stay on your computer. FormatLab does not contact any server.
+Your files stay on your computer. FormatLab does not contact any server
+other than GitHub Releases for update checks.
+
+### Updates
+
+FormatLab checks for a new release on startup and shows a subtle banner
+if one is available. One click installs and relaunches. No manual
+downloads needed after the first install.
 
 ## Building from source
 
@@ -85,6 +94,61 @@ npm run tauri:build  # produces a native installer in src-tauri/target/release/b
 
 Built installers land in `src-tauri/target/release/bundle/` — e.g.
 `bundle/appimage/*.AppImage`, `bundle/deb/*.deb`, `bundle/nsis/*.exe`.
+
+### One-click launcher on Linux (Cinnamon / GNOME / KDE / XFCE)
+
+```bash
+./scripts/install-desktop-entry.sh
+```
+
+This installs a `.desktop` entry into `~/.local/share/applications/` so
+FormatLab shows up in your application menu with a proper icon, can be
+pinned to the taskbar / panel, and can be dragged to your desktop as a
+shortcut. By default the icon is `~/Pictures/format_lab_logo.png` if
+present, otherwise the built-in app icon.
+
+Pass a custom icon path as the first argument to override:
+
+```bash
+./scripts/install-desktop-entry.sh /path/to/my-icon.png
+```
+
+## Cutting a release
+
+Releases are fully automated via GitHub Actions. To ship a new version:
+
+```bash
+# 1. Bump the version in src-tauri/tauri.conf.json, src-tauri/Cargo.toml
+#    and package.json (keep them in sync).
+# 2. Commit the bump.
+git commit -am "v0.1.1"
+# 3. Tag and push.
+git tag v0.1.1
+git push origin main --tags
+```
+
+The `Release` workflow (see `.github/workflows/release.yml`) then:
+
+1. Builds Linux (AppImage + deb) and Windows (NSIS exe) installers.
+2. Signs the installers with the private updater key.
+3. Creates a draft GitHub Release containing all assets plus
+   `latest.json` — the manifest the in-app updater reads.
+
+Review the draft, tweak the release notes, and hit **Publish**. Everyone
+running an older version will see the update banner on their next launch.
+
+### One-time secrets setup
+
+Before the first release, add these two repository secrets at
+`Settings → Secrets and variables → Actions`:
+
+- `TAURI_SIGNING_PRIVATE_KEY` — contents of `~/.tauri/formatlab.key`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — empty string if you used no
+  password when generating the key.
+
+Keep the private key safe. If you lose it, you'll have to ship a new
+release with a new public key and existing users will need to reinstall
+manually.
 
 ## Project layout
 

@@ -49,7 +49,15 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": ""
-    }
+    },
+    "createUpdaterArtifacts": true
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENDMUEwNjJGRUQ1NTI4QgpSV1NMVXRYK1lxREJER0FZellwdzZhck5DeUIvYlp3VExQeHdtdDhKQTh3NDZLR2U5Y0FCOEprVAo=",
+      "endpoints": [
+        "https://github.com/lynxt0/FormatLab/releases/latest/download/latest.json"
+      ]
+    }
+  }
 }

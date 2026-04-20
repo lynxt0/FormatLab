@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=FormatLab
+GenericName=File Converter
+Comment=Convert images, PDFs, and documents locally — private by design.
+Exec=__EXEC__
+Icon=__ICON__
+Terminal=false
+Categories=Utility;Graphics;Office;
+Keywords=convert;image;pdf;png;jpg;markdown;xlsx;csv;
+StartupNotify=true
+StartupWMClass=FormatLab

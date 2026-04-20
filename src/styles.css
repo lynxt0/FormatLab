@@ -419,3 +419,25 @@ main {
   height: 24px;
   border-radius: 6px;
 }
+
+/* ---------- Update banner ---------- */
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--accent-subtle);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.update-banner.hidden {
+  display: none;
+}
+
+.update-banner-msg {
+  flex: 1;
+  color: var(--fg);
+}

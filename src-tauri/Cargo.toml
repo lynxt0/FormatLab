@@ -17,9 +17,12 @@ tauri-build = { version = "2", features = [] }
 # Tauri
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 
-# Serialization
+# Serialization — serde_json is required by the tauri::generate_context! macro
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 # Error handling
 anyhow = "1"
@@ -43,6 +46,19 @@ image = { version = "0.25", default-features = false, features = [
 resvg = "0.44"
 usvg = "0.44"
 tiny-skia = "0.11"
+
+# PDF generation. Per-format features enable embedding encoded bytes
+# directly; we exclude `html` (the crate default) because it pulls in
+# azul-layout and friends which we don't need.
+printpdf = { version = "0.9", default-features = false, features = [
+    "png",
+    "jpeg",
+    "bmp",
+    "gif",
+    "tiff",
+    "webp",
+    "ico",
+] }
 
 # Text / markup
 pulldown-cmark = "0.12"

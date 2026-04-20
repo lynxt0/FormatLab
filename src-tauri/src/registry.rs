@@ -8,10 +8,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-// PDF module is registered for v0.1.1 but not exposed in v0.1.
-#[allow(unused_imports)]
-use crate::convert::pdf;
-use crate::convert::{images, office, text};
+use crate::convert::{images, office, pdf, text};
 
 pub fn convert(input: &Path, src: &str, tgt: &str, output: &Path) -> Result<()> {
     let src = src.to_lowercase();
@@ -31,8 +28,14 @@ pub fn convert(input: &Path, src: &str, tgt: &str, output: &Path) -> Result<()> 
             images::raster_to_raster(input, output, t)
         }
 
+        // Raster image → PDF
+        (s, "pdf") if is_raster(s) => pdf::image_to_pdf(input, output),
+
         // SVG → raster
         ("svg", t) if is_raster(t) => images::svg_to_raster(input, output, t),
+
+        // SVG → PDF (rasterise at 2x then embed)
+        ("svg", "pdf") => pdf::svg_to_pdf(input, output),
 
         // Text / markup
         ("md", "html") => text::markdown_to_html(input, output),

@@ -32,8 +32,8 @@ export const FORMATS: Record<string, FormatInfo> = {
   ico:  { ext: "ico",  label: "ICO",  category: "image" },
   svg:  { ext: "svg",  label: "SVG",  category: "image" },
 
-  // PDF — output support coming in v0.1.1
-  // pdf:  { ext: "pdf",  label: "PDF",  category: "pdf" },
+  // PDF
+  pdf:  { ext: "pdf",  label: "PDF",  category: "pdf" },
 
   // Text / markup
   md:       { ext: "md",       label: "Markdown", category: "text" },
@@ -52,19 +52,19 @@ export const FORMATS: Record<string, FormatInfo> = {
  * Keep this mirrored with the Rust registry.
  */
 export const CONVERSIONS: Record<string, string[]> = {
-  // Raster images can all go to each other. PDF output coming v0.1.1.
-  png:  ["jpg", "webp", "gif", "bmp", "tiff", "ico"],
-  jpg:  ["png", "webp", "gif", "bmp", "tiff", "ico"],
-  jpeg: ["png", "webp", "gif", "bmp", "tiff", "ico"],
-  webp: ["png", "jpg", "gif", "bmp", "tiff", "ico"],
-  gif:  ["png", "jpg", "webp", "bmp", "tiff", "ico"],
-  bmp:  ["png", "jpg", "webp", "gif", "tiff", "ico"],
-  tiff: ["png", "jpg", "webp", "gif", "bmp", "ico"],
-  tif:  ["png", "jpg", "webp", "gif", "bmp", "ico"],
-  ico:  ["png", "jpg", "webp", "gif", "bmp", "tiff"],
+  // Raster images can all go to each other, and to PDF.
+  png:  ["jpg", "webp", "gif", "bmp", "tiff", "ico", "pdf"],
+  jpg:  ["png", "webp", "gif", "bmp", "tiff", "ico", "pdf"],
+  jpeg: ["png", "webp", "gif", "bmp", "tiff", "ico", "pdf"],
+  webp: ["png", "jpg", "gif", "bmp", "tiff", "ico", "pdf"],
+  gif:  ["png", "jpg", "webp", "bmp", "tiff", "ico", "pdf"],
+  bmp:  ["png", "jpg", "webp", "gif", "tiff", "ico", "pdf"],
+  tiff: ["png", "jpg", "webp", "gif", "bmp", "ico", "pdf"],
+  tif:  ["png", "jpg", "webp", "gif", "bmp", "ico", "pdf"],
+  ico:  ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
 
-  // SVG → raster
-  svg:  ["png", "jpg", "webp", "bmp", "tiff"],
+  // SVG → raster or PDF (SVG passthrough isn't a useful "conversion")
+  svg:  ["png", "jpg", "webp", "bmp", "tiff", "pdf"],
 
   // Text / markup
   md:       ["html", "txt"],

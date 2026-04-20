@@ -5,6 +5,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import { initTheme } from "./theme";
+import { initUpdater } from "./updater";
 import { queue, formatBytes, type QueueItem } from "./queue";
 import { FORMATS, commonTargets } from "./formats";
 
@@ -262,6 +263,8 @@ function main(): void {
   queue.subscribe(renderQueue);
   renderQueue();
   setStatus("Ready");
+
+  void initUpdater($("update-banner"), setStatus);
 }
 
 document.addEventListener("DOMContentLoaded", main);
