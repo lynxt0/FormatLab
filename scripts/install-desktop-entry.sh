@@ -15,7 +15,9 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
 PROJECT_DIR="$( cd -- "${SCRIPT_DIR}/.." &>/dev/null && pwd )"
 
 LAUNCHER="${PROJECT_DIR}/scripts/launch-formatlab.sh"
+DEV_LAUNCHER="${PROJECT_DIR}/scripts/launch-formatlab-dev.sh"
 TEMPLATE="${PROJECT_DIR}/scripts/formatlab.desktop.template"
+DEV_TEMPLATE="${PROJECT_DIR}/scripts/formatlab-dev.desktop.template"
 
 # Pick an icon in this order of preference:
 #   1. explicit argument
@@ -36,30 +38,42 @@ else
     exit 1
 fi
 
-chmod +x "${LAUNCHER}"
+chmod +x "${LAUNCHER}" "${DEV_LAUNCHER}"
 
 APPS_DIR="${HOME}/.local/share/applications"
 mkdir -p "${APPS_DIR}"
-DEST="${APPS_DIR}/formatlab.desktop"
 
+# Main entry — smart launcher (runs release binary, builds if missing).
+MAIN_DEST="${APPS_DIR}/formatlab.desktop"
 sed \
     -e "s|__EXEC__|${LAUNCHER}|g" \
     -e "s|__ICON__|${ICON}|g" \
-    "${TEMPLATE}" > "${DEST}"
+    "${TEMPLATE}" > "${MAIN_DEST}"
+chmod +x "${MAIN_DEST}"
 
-chmod +x "${DEST}"
+# Dev entry — hot-reload launcher, hidden from casual users but kept
+# around for times when you're iterating on code.
+DEV_DEST="${APPS_DIR}/formatlab-dev.desktop"
+sed \
+    -e "s|__EXEC__|${DEV_LAUNCHER}|g" \
+    -e "s|__ICON__|${ICON}|g" \
+    "${DEV_TEMPLATE}" > "${DEV_DEST}"
+chmod +x "${DEV_DEST}"
 
-# Refresh the app-menu cache so the entry appears without a logout/login.
+# Refresh the app-menu cache so entries appear without a logout/login.
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "${APPS_DIR}" 2>/dev/null || true
 fi
 
-echo "Installed FormatLab launcher:"
-echo "  Desktop file : ${DEST}"
-echo "  Launcher     : ${LAUNCHER}"
-echo "  Icon         : ${ICON}"
+echo "Installed FormatLab launchers:"
+echo "  Main entry     : ${MAIN_DEST}"
+echo "  Launcher       : ${LAUNCHER}"
+echo "  Dev entry      : ${DEV_DEST}"
+echo "  Dev launcher   : ${DEV_LAUNCHER}"
+echo "  Icon           : ${ICON}"
 echo ""
 echo "You can now:"
-echo "  • Find FormatLab in your application menu (search 'FormatLab')"
-echo "  • Right-click the menu entry and pin it to the panel/taskbar"
-echo "  • Drag the .desktop file to your Desktop for a double-clickable shortcut"
+echo "  • Find 'FormatLab' in your application menu (normal use)"
+echo "  • Find 'FormatLab (Dev)' in the menu for hot-reload dev mode"
+echo "  • Right-click either entry and pin it to the panel/taskbar"
+echo "  • Drag the main .desktop file to your Desktop for a shortcut"

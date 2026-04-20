@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=FormatLab (Dev)
+GenericName=File Converter (Dev Mode)
+Comment=Run FormatLab from source with hot reload. For development only.
+Exec=__EXEC__
+Icon=__ICON__
+Terminal=false
+Categories=Development;Utility;
+Keywords=formatlab;dev;tauri;hot reload;
+StartupNotify=true
+StartupWMClass=FormatLab
