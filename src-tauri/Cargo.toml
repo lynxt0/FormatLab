@@ -66,12 +66,18 @@ pulldown-cmark = "0.12"
 # Office
 calamine = "0.26"
 
+# HEIC / HEIF / AVIF decoding. Optional because it links against the
+# system libheif, which must be installed on the build host
+# (libheif-dev on Debian/Ubuntu/Mint). Enabled by default for Linux
+# dev builds; CI disables it for the Windows runner until we have a
+# vcpkg-built libheif available there (planned for v0.1.2).
+libheif-rs = { version = "2.7", default-features = false, features = [
+    "v1_17",
+], optional = true }
+
 [features]
-default = []
-# HEIC decoding is gated behind a feature flag because it requires the
-# system libheif library. Enable with --features heic on Linux. Windows
-# build support for HEIC is planned once a vendored build is sorted.
-heic = []
+default = ["heic"]
+heic = ["dep:libheif-rs"]
 
 [profile.release]
 codegen-units = 1

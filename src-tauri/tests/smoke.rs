@@ -182,6 +182,83 @@ fn markdown_to_txt_strips_marks() {
     assert!(body.contains("FormatLab"), "expected original content preserved");
 }
 
+/// End-to-end AVIF → PNG test. Skips silently on machines that don't
+/// have `ffmpeg` (used to author the test AVIF); CI and any dev box
+/// with ffmpeg installed get full coverage.
+#[test]
+#[cfg(feature = "heic")]
+fn avif_to_png_round_trip() {
+    if which_cmd("ffmpeg").is_none() {
+        eprintln!("skipping avif_to_png_round_trip: ffmpeg not installed");
+        return;
+    }
+
+    let dir = tmpdir();
+    let png_seed = dir.join("seed.png");
+    let avif = dir.join("seed.avif");
+    let out = dir.join("seed.png.out.png");
+
+    // Make a known seed PNG so we have something to encode.
+    let mut img = image::RgbImage::new(64, 64);
+    for (x, y, px) in img.enumerate_pixels_mut() {
+        *px = image::Rgb([((x * 4) & 0xFF) as u8, ((y * 4) & 0xFF) as u8, 128]);
+    }
+    img.save(&png_seed).unwrap();
+
+    // ffmpeg: PNG → AVIF using AV1 still-picture encoding.
+    let status = std::process::Command::new("ffmpeg")
+        .args([
+            "-loglevel", "error",
+            "-y",
+            "-i", png_seed.to_str().unwrap(),
+            "-c:v", "libaom-av1",
+            "-still-picture", "1",
+            "-cpu-used", "8",
+            avif.to_str().unwrap(),
+        ])
+        .status()
+        .expect("run ffmpeg");
+    assert!(status.success(), "ffmpeg failed to produce AVIF");
+
+    // Now the real test — decode via FormatLab and confirm PNG output.
+    convert(&avif, "avif", "png", &out).expect("avif -> png failed");
+    assert_valid_output(&out, 200);
+    assert_magic(&out, &[0x89, b'P', b'N', b'G'], "PNG signature");
+
+    // Decoded dimensions must match the input.
+    let decoded = image::open(&out).expect("open decoded png");
+    assert_eq!(decoded.width(), 64);
+    assert_eq!(decoded.height(), 64);
+}
+
+/// If HEIC feature is disabled, the dispatcher should still error out
+/// cleanly instead of panicking.
+#[test]
+#[cfg(not(feature = "heic"))]
+fn heic_disabled_returns_friendly_error() {
+    let dir = tmpdir();
+    let fake = dir.join("x.heic");
+    std::fs::write(&fake, b"not a real heic").unwrap();
+    let out = dir.join("x.png");
+    let err = convert(&fake, "heic", "png", &out).expect_err("should fail when feature is off");
+    assert!(
+        err.to_string().contains("isn't available in this build")
+            || err.to_string().contains("not available"),
+        "error message should explain the feature gate: {err}"
+    );
+}
+
+fn which_cmd(name: &str) -> Option<std::path::PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    for dir in std::env::split_paths(&path) {
+        let candidate = dir.join(name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
 #[test]
 fn html_to_markdown_inline() {
     let dir = tmpdir();

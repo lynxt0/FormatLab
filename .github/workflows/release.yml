@@ -23,7 +23,11 @@ jobs:
           - platform: ubuntu-24.04
             args: ""
           - platform: windows-latest
-            args: ""
+            # HEIC/HEIF/AVIF decoding links against libheif, which we
+            # haven't wired up for Windows yet (vcpkg integration is
+            # planned for v0.1.2). Disable the default `heic` feature
+            # so the Windows .exe still builds.
+            args: "--no-default-features"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -57,7 +61,11 @@ jobs:
             librsvg2-dev \
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev \
-            patchelf
+            patchelf \
+            libheif-dev \
+            libheif-plugin-libde265 \
+            libheif-plugin-aomdec \
+            ffmpeg
 
       - name: Install frontend dependencies
         run: npm ci

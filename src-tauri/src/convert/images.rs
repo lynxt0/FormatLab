@@ -9,14 +9,25 @@ use image::{DynamicImage, ImageFormat};
 pub fn raster_to_raster(input: &Path, output: &Path, target_ext: &str) -> Result<()> {
     let img = image::open(input)
         .with_context(|| format!("Failed to decode image: {}", input.display()))?;
-    save_image(&img, output, target_ext)
+    save_dynamic_image(&img, output, target_ext)
 }
 
 /// Rasterise an SVG and save it as one of the supported raster formats.
 pub fn svg_to_raster(input: &Path, output: &Path, target_ext: &str) -> Result<()> {
     let pixmap = rasterise_svg(input, None)?;
     let img = pixmap_to_image(&pixmap);
-    save_image(&img, output, target_ext)
+    save_dynamic_image(&img, output, target_ext)
+}
+
+/// Write an already-decoded DynamicImage to disk in the target raster
+/// format. Shared by raster, SVG, and HEIC converters.
+pub(crate) fn save_dynamic_image(img: &DynamicImage, output: &Path, target_ext: &str) -> Result<()> {
+    let fmt = ext_to_format(target_ext)?;
+    let prepared = prepare_for_format(img, fmt);
+    prepared
+        .save_with_format(output, fmt)
+        .with_context(|| format!("Failed to write image: {}", output.display()))?;
+    Ok(())
 }
 
 /// Read an SVG file and render it to a tiny_skia::Pixmap.
@@ -45,15 +56,6 @@ fn pixmap_to_image(pixmap: &tiny_skia::Pixmap) -> DynamicImage {
     let buf = image::RgbaImage::from_raw(pixmap.width(), pixmap.height(), pixmap.data().to_vec())
         .expect("pixmap dimensions match buffer length by construction");
     DynamicImage::ImageRgba8(buf)
-}
-
-fn save_image(img: &DynamicImage, output: &Path, target_ext: &str) -> Result<()> {
-    let fmt = ext_to_format(target_ext)?;
-    let prepared = prepare_for_format(img, fmt);
-    prepared
-        .save_with_format(output, fmt)
-        .with_context(|| format!("Failed to write image: {}", output.display()))?;
-    Ok(())
 }
 
 fn ext_to_format(ext: &str) -> Result<ImageFormat> {

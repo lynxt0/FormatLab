@@ -14,16 +14,24 @@ Built with Tauri 2 (Rust + web), runs natively on Linux and Windows.
 | --------------- | ------------------------------------------------------ |
 | PNG / JPG / WebP / GIF / BMP / TIFF / ICO | any other raster format, plus PDF    |
 | SVG             | PNG / JPG / WebP / BMP / TIFF / PDF                    |
+| **HEIC / HEIF / AVIF** *(Linux only for now)* | any raster format, plus PDF |
 | Markdown (`.md`) | HTML, TXT                                              |
 | HTML            | Markdown, TXT                                          |
 | TXT             | Markdown, HTML                                         |
 | XLSX            | CSV                                                    |
 
+> **HEIC on Windows** — decoding HEIC / HEIF / AVIF links against the
+> system `libheif`, which isn't bundled into the Windows `.exe` yet.
+> Windows friends will see these formats in the UI but conversions will
+> fail with a clear message until v0.1.2, which will ship libheif via
+> vcpkg. Linux users (via `.deb` / `.AppImage` / source build) have full
+> support now.
+
 Planned for future releases:
 - Multi-image → multi-page PDF
 - PDF → images and PDF → text
 - PDF merge / split
-- HEIC / AVIF decoding
+- HEIC support on Windows (vcpkg-bundled libheif)
 - DOCX ↔ HTML / Markdown / TXT
 - Audio and video formats
 
@@ -67,7 +75,17 @@ sudo apt install -y \
   librsvg2-dev \
   libsoup-3.0-dev \
   libjavascriptcoregtk-4.1-dev \
-  patchelf
+  patchelf \
+  libheif-dev \
+  libheif-plugin-libde265 \
+  libheif-plugin-aomdec
+```
+
+The last three packages enable HEIC / HEIF / AVIF decoding. To build
+without them, pass `--no-default-features` to Cargo:
+
+```bash
+npm run tauri:build -- --no-default-features
 ```
 
 ### Windows

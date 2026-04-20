@@ -32,6 +32,11 @@ export const FORMATS: Record<string, FormatInfo> = {
   ico:  { ext: "ico",  label: "ICO",  category: "image" },
   svg:  { ext: "svg",  label: "SVG",  category: "image" },
 
+  // HEIF family (decode-only in v0.1.1 — no one wants to produce HEIC)
+  heic: { ext: "heic", label: "HEIC", category: "image" },
+  heif: { ext: "heif", label: "HEIF", category: "image" },
+  avif: { ext: "avif", label: "AVIF", category: "image" },
+
   // PDF
   pdf:  { ext: "pdf",  label: "PDF",  category: "pdf" },
 
@@ -65,6 +70,13 @@ export const CONVERSIONS: Record<string, string[]> = {
 
   // SVG → raster or PDF (SVG passthrough isn't a useful "conversion")
   svg:  ["png", "jpg", "webp", "bmp", "tiff", "pdf"],
+
+  // HEIC / HEIF / AVIF are decode-only for now — export to any raster
+  // format or PDF. Encoding TO HEIC/AVIF requires patented encoders we
+  // haven't bundled (planned for v0.2).
+  heic: ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
+  heif: ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
+  avif: ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
 
   // Text / markup
   md:       ["html", "txt"],

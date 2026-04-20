@@ -58,6 +58,15 @@ pub fn svg_to_pdf(input: &Path, output: &Path) -> Result<()> {
     write_single_page_pdf(&png_bytes, w_px_2x / 2, h_px_2x / 2, output)
 }
 
+/// Embed an already-decoded DynamicImage as a single-page PDF. Used by
+/// converters that can't just pass raw file bytes (e.g. HEIC after
+/// decoding through libheif).
+pub(crate) fn dynamic_image_to_pdf(img: DynamicImage, output: &Path) -> Result<()> {
+    let (w, h) = (img.width(), img.height());
+    let png_bytes = reencode_as_png(&img)?;
+    write_single_page_pdf(&png_bytes, w, h, output)
+}
+
 fn write_single_page_pdf(
     png_or_jpeg_bytes: &[u8],
     w_px: u32,

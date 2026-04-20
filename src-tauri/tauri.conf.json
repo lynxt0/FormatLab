@@ -42,7 +42,11 @@
     ],
     "linux": {
       "deb": {
-        "depends": []
+        "depends": [
+          "libheif1",
+          "libheif-plugin-libde265",
+          "libheif-plugin-aomdec"
+        ]
       }
     },
     "windows": {

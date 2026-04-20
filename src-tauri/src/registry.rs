@@ -8,7 +8,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::convert::{images, office, pdf, text};
+use crate::convert::{heic, images, office, pdf, text};
 
 pub fn convert(input: &Path, src: &str, tgt: &str, output: &Path) -> Result<()> {
     let src = src.to_lowercase();
@@ -19,6 +19,12 @@ pub fn convert(input: &Path, src: &str, tgt: &str, output: &Path) -> Result<()> 
     let tgt = normalise_ext(&tgt);
 
     match (src.as_str(), tgt.as_str()) {
+        // HEIC / HEIF / AVIF → raster or PDF. These all decode through
+        // the same libheif pipeline; the source extension is only a hint
+        // about container + codec.
+        (s, t) if is_heic(s) && is_raster(t) => heic::heic_to_raster(input, output, t),
+        (s, "pdf") if is_heic(s) => heic::heic_to_pdf(input, output),
+
         // Raster image → raster image (any combination among these)
         (s, t)
             if is_raster(s)
@@ -58,6 +64,11 @@ fn normalise_ext(ext: &str) -> String {
         "tif" => "tiff".to_string(),
         "htm" => "html".to_string(),
         "markdown" => "md".to_string(),
+        // HEIC/HEIF/AVIF all share the same HEIF container and decode
+        // through the same libheif pipeline. We keep the three distinct
+        // in the registry because users expect to see "AVIF → PNG" as a
+        // separate row from "HEIC → PNG" in the UI, and because libheif
+        // picks different decoder plugins per content.
         other => other.to_string(),
     }
 }
@@ -67,4 +78,8 @@ fn is_raster(ext: &str) -> bool {
         ext,
         "png" | "jpg" | "webp" | "gif" | "bmp" | "tiff" | "ico"
     )
+}
+
+fn is_heic(ext: &str) -> bool {
+    matches!(ext, "heic" | "heif" | "avif")
 }
