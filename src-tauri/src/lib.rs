@@ -1,6 +1,6 @@
 mod commands;
-mod convert;
-mod registry;
+pub mod convert;
+pub mod registry;
 mod util;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
