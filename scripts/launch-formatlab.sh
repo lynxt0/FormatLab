@@ -117,7 +117,13 @@ BUILD_CMD=(
             npm install --no-audit --no-fund || exit 1 ;
         fi ;
         echo '- building release binary (this takes a few minutes the first time)' ;
-        npm run tauri:build || exit 1 ;
+        # --no-bundle skips .deb / .AppImage / .rpm creation and, critically,
+        # the signed-updater step that needs TAURI_SIGNING_PRIVATE_KEY. The
+        # launcher only ever runs the resulting binary, so those artifacts
+        # are redundant here. For a full signed release, use the GitHub
+        # Actions workflow (it has the private key) or run
+        # \`npm run tauri:build\` manually with the env var set.
+        npm run tauri:build -- --no-bundle || exit 1 ;
         echo ;
         echo '== Build complete, launching FormatLab ==' ;
         exec '${RELEASE_BIN}'
@@ -131,7 +137,7 @@ else
     (
         cd "${PROJECT_DIR}"
         [[ ! -d node_modules ]] && npm install --no-audit --no-fund >"${LOG_DIR}/npm-install.log" 2>&1
-        npm run tauri:build >"${LOG_DIR}/build.log" 2>&1 || exit 1
+        npm run tauri:build -- --no-bundle >"${LOG_DIR}/build.log" 2>&1 || exit 1
         exec "${RELEASE_BIN}"
     ) &
     disown
