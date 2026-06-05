@@ -7,7 +7,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { initTheme } from "./theme";
 import { initUpdater } from "./updater";
 import { queue, formatBytes, type QueueItem } from "./queue";
-import { FORMATS, commonTargets } from "./formats";
+import { FORMATS, commonTargets, unsupportedExts } from "./formats";
 
 interface ConversionResult {
   ok: boolean;
@@ -78,7 +78,17 @@ function updateFormatPicker(): void {
     select.innerHTML = '<option value="">No common target</option>';
     select.disabled = true;
     convertBtn.disabled = true;
-    setStatus("Files in the queue don't share a common target format.");
+    const blocked = unsupportedExts(exts);
+    if (blocked.length > 0) {
+      const list = blocked.map((e) => (e.startsWith("(") ? e : `.${e}`)).join(", ");
+      setStatus(
+        `Can't convert these formats: ${list}. Remove those files and the rest will convert.`,
+      );
+    } else {
+      setStatus(
+        "These files don't share a target format — convert images and text in separate batches.",
+      );
+    }
     return;
   }
 

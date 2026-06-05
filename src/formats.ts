@@ -109,6 +109,21 @@ export function commonTargets(sourceExts: string[]): string[] {
 }
 
 /**
+ * Of the given source extensions, which ones can't be converted at all
+ * (no entry in the registry)? Returned lowercased and de-duplicated.
+ * A single unsupported file makes the whole queue have no common target,
+ * so the UI uses this to point at the culprit instead of a vague error.
+ */
+export function unsupportedExts(sourceExts: string[]): string[] {
+  const seen = new Set<string>();
+  for (const ext of sourceExts) {
+    const e = ext.toLowerCase();
+    if (!(e in CONVERSIONS)) seen.add(e || "(no extension)");
+  }
+  return [...seen];
+}
+
+/**
  * Parse the extension from a filename (lowercased, no leading dot).
  * Returns empty string if no extension.
  */
