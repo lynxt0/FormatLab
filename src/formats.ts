@@ -37,6 +37,9 @@ export const FORMATS: Record<string, FormatInfo> = {
   heif: { ext: "heif", label: "HEIF", category: "image" },
   avif: { ext: "avif", label: "AVIF", category: "image" },
 
+  // Raw (decode-only — we extract the embedded JPEG preview)
+  dng:  { ext: "dng",  label: "DNG (raw)", category: "image" },
+
   // PDF
   pdf:  { ext: "pdf",  label: "PDF",  category: "pdf" },
 
@@ -77,6 +80,9 @@ export const CONVERSIONS: Record<string, string[]> = {
   heic: ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
   heif: ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
   avif: ["png", "jpg", "webp", "gif", "bmp", "tiff", "pdf"],
+
+  // DNG raw — decode-only via the embedded JPEG preview.
+  dng:  ["jpg", "png", "webp", "gif", "bmp", "tiff", "pdf"],
 
   // Text / markup
   md:       ["html", "txt"],

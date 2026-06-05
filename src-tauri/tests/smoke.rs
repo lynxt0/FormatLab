@@ -40,6 +40,87 @@ fn write_test_svg(dir: &Path) -> PathBuf {
     path
 }
 
+/// Build a minimal but realistic DNG: a TIFF whose IFD0 holds fake raw
+/// CFA data (PhotometricInterpretation = CFA) and whose SubIFD holds a
+/// real 16x12 JPEG preview. Returns the file path and the exact preview
+/// bytes so tests can assert a lossless passthrough.
+fn write_test_dng(dir: &Path) -> (PathBuf, Vec<u8>) {
+    use std::io::Cursor;
+
+    let mut prev = image::RgbImage::new(16, 12);
+    for (x, y, px) in prev.enumerate_pixels_mut() {
+        *px = image::Rgb([((x * 16) & 0xFF) as u8, ((y * 16) & 0xFF) as u8, 200]);
+    }
+    let mut jpeg = Vec::new();
+    image::DynamicImage::ImageRgb8(prev)
+        .write_to(&mut Cursor::new(&mut jpeg), image::ImageFormat::Jpeg)
+        .expect("encode preview jpeg");
+    let raw = vec![0xABu8; 64]; // fake CFA strip — deliberately not a JPEG
+
+    // Fixed-size little-endian IFDs let us compute offsets up front. Every
+    // entry is a single LONG so values sit inline.
+    let ifd0_off = 8usize;
+    let ifd0_size = 2 + 7 * 12 + 4;
+    let subifd_off = ifd0_off + ifd0_size;
+    let subifd_size = 2 + 6 * 12 + 4;
+    let jpeg_off = subifd_off + subifd_size;
+    let raw_off = jpeg_off + jpeg.len();
+
+    fn put_ifd(buf: &mut Vec<u8>, entries: &[(u16, u32)], next: u32) {
+        buf.extend_from_slice(&(entries.len() as u16).to_le_bytes());
+        for &(tag, val) in entries {
+            buf.extend_from_slice(&tag.to_le_bytes());
+            buf.extend_from_slice(&4u16.to_le_bytes()); // type LONG
+            buf.extend_from_slice(&1u32.to_le_bytes()); // count
+            buf.extend_from_slice(&val.to_le_bytes());
+        }
+        buf.extend_from_slice(&next.to_le_bytes());
+    }
+
+    let mut buf = Vec::new();
+    buf.extend_from_slice(b"II");
+    buf.extend_from_slice(&42u16.to_le_bytes());
+    buf.extend_from_slice(&(ifd0_off as u32).to_le_bytes());
+
+    // IFD0: the raw image (Compression=JPEG, Photometric=CFA=32803) plus a
+    // SubIFDs pointer. The CFA tag must keep the extractor away from it.
+    put_ifd(
+        &mut buf,
+        &[
+            (256, 100),
+            (257, 100),
+            (259, 7),
+            (262, 32803),
+            (273, raw_off as u32),
+            (279, raw.len() as u32),
+            (330, subifd_off as u32),
+        ],
+        0,
+    );
+    // SubIFD: the JPEG preview (Compression=JPEG, Photometric=YCbCr=6).
+    put_ifd(
+        &mut buf,
+        &[
+            (256, 16),
+            (257, 12),
+            (259, 7),
+            (262, 6),
+            (273, jpeg_off as u32),
+            (279, jpeg.len() as u32),
+        ],
+        0,
+    );
+
+    assert_eq!(buf.len(), jpeg_off, "jpeg data must follow the IFDs");
+    buf.extend_from_slice(&jpeg);
+    assert_eq!(buf.len(), raw_off, "raw data must follow the jpeg");
+    buf.extend_from_slice(&raw);
+
+    let path = dir.join("test.dng");
+    fs::write(&path, &buf).expect("write dng");
+    (path, jpeg)
+}
+
 fn write_test_markdown(dir: &Path) -> PathBuf {
     let path = dir.join("test.md");
     fs::write(
@@ -257,6 +338,53 @@ fn which_cmd(name: &str) -> Option<std::path::PathBuf> {
         }
     }
     None
+}
+
+#[test]
+fn dng_to_jpg_passes_preview_through() {
+    let dir = tmpdir();
+    let (src, preview) = write_test_dng(&dir);
+    let out = dir.join("test.jpg");
+    convert(&src, "dng", "jpg", &out).expect("dng -> jpg failed");
+    assert_magic(&out, &[0xFF, 0xD8, 0xFF], "JPEG magic");
+    let got = fs::read(&out).unwrap();
+    assert_eq!(
+        got, preview,
+        "DNG -> JPG should write the embedded preview through untouched"
+    );
+}
+
+#[test]
+fn dng_to_png_decodes_preview_not_raw() {
+    let dir = tmpdir();
+    let (src, _) = write_test_dng(&dir);
+    let out = dir.join("test.png");
+    convert(&src, "dng", "png", &out).expect("dng -> png failed");
+    assert_magic(&out, &[0x89, b'P', b'N', b'G'], "PNG signature");
+    // 16x12 is the preview; 100x100 would mean we wrongly grabbed the raw CFA.
+    let decoded = image::open(&out).expect("open decoded png");
+    assert_eq!(decoded.width(), 16, "should decode the preview, not the raw");
+    assert_eq!(decoded.height(), 12, "should decode the preview, not the raw");
+}
+
+#[test]
+fn dng_without_preview_errors_clearly() {
+    let dir = tmpdir();
+    // A valid little-endian TIFF header pointing at an empty IFD: no preview.
+    let mut buf = Vec::new();
+    buf.extend_from_slice(b"II");
+    buf.extend_from_slice(&42u16.to_le_bytes());
+    buf.extend_from_slice(&8u32.to_le_bytes());
+    buf.extend_from_slice(&0u16.to_le_bytes()); // 0 entries
+    buf.extend_from_slice(&0u32.to_le_bytes()); // no next IFD
+    let src = dir.join("empty.dng");
+    fs::write(&src, &buf).unwrap();
+    let out = dir.join("empty.jpg");
+    let err = convert(&src, "dng", "jpg", &out).expect_err("should fail without a preview");
+    assert!(
+        err.to_string().contains("no embedded JPEG preview"),
+        "error should explain the missing preview: {err}"
+    );
 }
 
 #[test]

@@ -15,6 +15,7 @@ Built with Tauri 2 (Rust + web), runs natively on Linux and Windows.
 | PNG / JPG / WebP / GIF / BMP / TIFF / ICO | any other raster format, plus PDF    |
 | SVG             | PNG / JPG / WebP / BMP / TIFF / PDF                    |
 | **HEIC / HEIF / AVIF** *(Linux only for now)* | any raster format, plus PDF |
+| **DNG (raw)**   | JPG / PNG / WebP / GIF / BMP / TIFF / PDF              |
 | Markdown (`.md`) | HTML, TXT                                              |
 | HTML            | Markdown, TXT                                          |
 | TXT             | Markdown, HTML                                         |
@@ -26,6 +27,13 @@ Built with Tauri 2 (Rust + web), runs natively on Linux and Windows.
 > fail with a clear message until v0.1.2, which will ship libheif via
 > vcpkg. Linux users (via `.deb` / `.AppImage` / source build) have full
 > support now.
+
+> **DNG (raw)** — FormatLab extracts the full-resolution JPEG preview that
+> phone, drone, and Lightroom DNGs embed, rather than developing the raw
+> sensor data. This keeps the app fully MIT-licensed and dependency-light,
+> works on every platform, and gives the camera's own rendering. Rare
+> "raw-only" DNGs with no embedded preview can't be converted and report a
+> clear message.
 
 Planned for future releases:
 - Multi-image → multi-page PDF

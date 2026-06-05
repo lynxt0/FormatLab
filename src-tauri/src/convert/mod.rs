@@ -1,3 +1,4 @@
+pub mod dng;
 pub mod heic;
 pub mod images;
 pub mod office;

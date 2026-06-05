@@ -8,7 +8,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::convert::{heic, images, office, pdf, text};
+use crate::convert::{dng, heic, images, office, pdf, text};
 
 pub fn convert(input: &Path, src: &str, tgt: &str, output: &Path) -> Result<()> {
     let src = src.to_lowercase();
@@ -24,6 +24,11 @@ pub fn convert(input: &Path, src: &str, tgt: &str, output: &Path) -> Result<()> 
         // about container + codec.
         (s, t) if is_heic(s) && is_raster(t) => heic::heic_to_raster(input, output, t),
         (s, "pdf") if is_heic(s) => heic::heic_to_pdf(input, output),
+
+        // DNG (raw) → raster or PDF. We extract the embedded JPEG preview
+        // rather than developing the sensor data (see convert/dng.rs).
+        ("dng", t) if is_raster(t) => dng::dng_to_raster(input, output, t),
+        ("dng", "pdf") => dng::dng_to_pdf(input, output),
 
         // Raster image → raster image (any combination among these)
         (s, t)
