@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use anyhow::Context;
 use serde::Serialize;
 
 use crate::registry::convert;
@@ -67,8 +68,16 @@ pub fn get_file_meta(paths: Vec<String>) -> Vec<FileMeta> {
 }
 
 /// Convert a single file to the requested target extension.
+///
+/// When `output_dir` is `Some`, the converted file is written there;
+/// otherwise it lands next to the source file. Either way, name clashes
+/// get a ` (n)` suffix so nothing is overwritten.
 #[tauri::command]
-pub fn convert_file(input_path: String, target_ext: String) -> ConversionResult {
+pub fn convert_file(
+    input_path: String,
+    target_ext: String,
+    output_dir: Option<String>,
+) -> ConversionResult {
     let input = PathBuf::from(&input_path);
     let source_ext = match input.ext_lower() {
         Some(e) => e,
@@ -80,7 +89,7 @@ pub fn convert_file(input_path: String, target_ext: String) -> ConversionResult 
         return ConversionResult::err("Input file no longer exists.");
     }
 
-    let output = match pick_output_path(&input, &target_ext) {
+    let output = match pick_output_path(&input, &target_ext, output_dir.as_deref()) {
         Ok(o) => o,
         Err(e) => return ConversionResult::err(e.to_string()),
     };
@@ -138,15 +147,57 @@ pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
     }
 }
 
-fn pick_output_path(input: &Path, target_ext: &str) -> anyhow::Result<PathBuf> {
-    let parent = input.parent().ok_or_else(|| {
-        anyhow::anyhow!("Input path has no parent directory: {}", input.display())
-    })?;
+fn pick_output_path(
+    input: &Path,
+    target_ext: &str,
+    output_dir: Option<&str>,
+) -> anyhow::Result<PathBuf> {
     let stem = input
         .file_stem()
         .ok_or_else(|| anyhow::anyhow!("Input has no filename stem"))?
         .to_string_lossy()
         .into_owned();
-    let candidate = parent.join(format!("{stem}.{target_ext}"));
+
+    let dir = match output_dir {
+        Some(d) => {
+            let dir = PathBuf::from(d);
+            std::fs::create_dir_all(&dir)
+                .with_context(|| format!("Failed to create output folder: {}", dir.display()))?;
+            dir
+        }
+        None => input
+            .parent()
+            .ok_or_else(|| {
+                anyhow::anyhow!("Input path has no parent directory: {}", input.display())
+            })?
+            .to_path_buf(),
+    };
+
+    let candidate = dir.join(format!("{stem}.{target_ext}"));
     Ok(unique_sibling_path(&candidate))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn output_defaults_next_to_source() {
+        let input = PathBuf::from("/tmp/photos/IMG_1234.dng");
+        let out = pick_output_path(&input, "jpg", None).unwrap();
+        assert_eq!(out, PathBuf::from("/tmp/photos/IMG_1234.jpg"));
+    }
+
+    #[test]
+    fn output_honours_destination_dir_and_creates_it() {
+        let dir = std::env::temp_dir().join(format!("formatlab-dest-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let input = PathBuf::from("/somewhere/else/IMG_1234.dng");
+
+        let out = pick_output_path(&input, "jpg", Some(dir.to_str().unwrap())).unwrap();
+
+        assert_eq!(out, dir.join("IMG_1234.jpg"));
+        assert!(dir.exists(), "destination folder should be created if missing");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

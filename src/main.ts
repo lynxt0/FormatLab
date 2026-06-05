@@ -59,6 +59,11 @@ async function promptForFiles(): Promise<void> {
 function updateFormatPicker(): void {
   const select = $<HTMLSelectElement>("format-select");
   const convertBtn = $<HTMLButtonElement>("convert-btn");
+  const convertToBtn = $<HTMLButtonElement>("convert-to-btn");
+  const setConvertEnabled = (enabled: boolean) => {
+    convertBtn.disabled = !enabled;
+    convertToBtn.disabled = !enabled;
+  };
 
   const items = queue.getAll();
   const exts = items.map((i) => i.ext);
@@ -70,14 +75,14 @@ function updateFormatPicker(): void {
   if (items.length === 0) {
     select.innerHTML = '<option value="">—</option>';
     select.disabled = true;
-    convertBtn.disabled = true;
+    setConvertEnabled(false);
     return;
   }
 
   if (targets.length === 0) {
     select.innerHTML = '<option value="">No common target</option>';
     select.disabled = true;
-    convertBtn.disabled = true;
+    setConvertEnabled(false);
     const blocked = unsupportedExts(exts);
     if (blocked.length > 0) {
       const list = blocked.map((e) => (e.startsWith("(") ? e : `.${e}`)).join(", ");
@@ -100,7 +105,7 @@ function updateFormatPicker(): void {
     select.appendChild(opt);
   }
   if (targets.includes(previous)) select.value = previous;
-  convertBtn.disabled = items.every((i) => i.status === "converting");
+  setConvertEnabled(!items.every((i) => i.status === "converting"));
 }
 
 function renderQueue(): void {
@@ -179,13 +184,30 @@ function statusText(item: QueueItem): string {
   }
 }
 
-async function convertAll(): Promise<void> {
+/** Prompt for a destination folder, then convert everything into it. */
+async function convertTo(): Promise<void> {
+  const dest = await openDialog({
+    directory: true,
+    multiple: false,
+    title: "Choose where to save the converted files",
+  });
+  if (!dest || Array.isArray(dest)) return;
+  await convertAll(dest);
+}
+
+/**
+ * Convert every queued file to the selected target. With `destDir` the
+ * outputs are written there; without it they land next to each source.
+ */
+async function convertAll(destDir?: string): Promise<void> {
   const select = $<HTMLSelectElement>("format-select");
   const target = select.value;
   if (!target) return;
 
   const convertBtn = $<HTMLButtonElement>("convert-btn");
+  const convertToBtn = $<HTMLButtonElement>("convert-to-btn");
   convertBtn.disabled = true;
+  convertToBtn.disabled = true;
 
   const items = queue.getAll().filter((i) => i.status !== "converting");
   let okCount = 0;
@@ -198,6 +220,7 @@ async function convertAll(): Promise<void> {
       const res = await invoke<ConversionResult>("convert_file", {
         inputPath: item.path,
         targetExt: target,
+        outputDir: destDir ?? null,
       });
       if (res.ok && res.output_path) {
         queue.update(item.id, { status: "done", outputPath: res.output_path });
@@ -213,8 +236,10 @@ async function convertAll(): Promise<void> {
   }
 
   convertBtn.disabled = false;
+  convertToBtn.disabled = false;
+  const where = destDir ? ` → ${destDir}` : "";
   setStatus(
-    `Finished · ${okCount} ok${errCount ? ` · ${errCount} failed` : ""}`
+    `Finished · ${okCount} ok${errCount ? ` · ${errCount} failed` : ""}${where}`
   );
 }
 
@@ -269,6 +294,7 @@ function main(): void {
     setStatus("Queue cleared");
   });
   $("convert-btn").addEventListener("click", () => void convertAll());
+  $("convert-to-btn").addEventListener("click", () => void convertTo());
 
   queue.subscribe(renderQueue);
   renderQueue();

@@ -4,7 +4,7 @@ A clean, fully-offline file converter for images, PDFs, and documents.
 Built with Tauri 2 (Rust + web), runs natively on Linux and Windows.
 
 - **Private by design** — every conversion happens on your own machine. Nothing is ever uploaded.
-- **Simple** — drag files in, pick the output format, hit convert. Results saved next to the originals.
+- **Simple** — drag files in, pick the output format, hit convert. Results save next to the originals, or use **Convert to…** to send them all to a folder you choose.
 - **Fast** — native Rust converters, no browser tax.
 - **Cross-platform** — Linux (`.AppImage` / `.deb`) and Windows (`.exe`).
 
